@@ -65,6 +65,8 @@ def chronological_split(
     """Split already time-sorted data into consecutive, non-overlapping blocks."""
     if len(X) != len(y) or not X.index.equals(y.index):
         raise ValueError("X and y must share the same index")
+    if not isinstance(X.index, pd.DatetimeIndex) or X.index.hasnans:
+        raise ValueError("rows must have valid timestamps")
     if not X.index.is_monotonic_increasing or X.index.has_duplicates:
         raise ValueError("rows must be sorted by strictly increasing time")
 

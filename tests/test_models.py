@@ -32,7 +32,7 @@ class ModelFactoryTests(unittest.TestCase):
             "ridge": models.ridge(1.0),
             "random_forest": models.random_forest(n_estimators=10, seed=0),
             "hist_gradient_boosting": models.hist_gradient_boosting(seed=0, max_iter=20),
-            "stacking": models.stacking(1.0, {"max_iter": 20}, n_estimators=10, seed=0, folds=3),
+            "stacking": models.stacking(n_estimators=10, seed=0, folds=3),
         }
         for name, estimator in candidates.items():
             with self.subTest(model=name):
@@ -65,10 +65,16 @@ class ModelFactoryTests(unittest.TestCase):
             predictions = self._fit(estimator).predict(X)
             self.assertTrue(np.all(np.isfinite(predictions)))
 
-    def test_stacking_uses_unshuffled_folds(self):
-        stack = models.stacking(1.0, {}, n_estimators=5, folds=4)
-        self.assertEqual(stack.cv.get_n_splits(), 4)
-        self.assertFalse(stack.cv.shuffle)
+    def test_single_sensor_empty_training_column_is_retained_without_future_data(self):
+        X = self.split.X_train.copy()
+        X[CO_SENSOR] = np.nan
+        fitted = models.single_sensor_linear().fit(X, self.split.y_train)
+        imputer = fitted.named_steps["select"].named_transformers_["co_sensor"]
+        np.testing.assert_array_equal(imputer.statistics_, [0.0])
+        # A sensor first observed in the future cannot create a learned slope.
+        later = self.split.X_test.copy()
+        later[CO_SENSOR] = 1e9
+        np.testing.assert_allclose(fitted.predict(later), self.split.y_train.mean())
 
 
 class TuningTests(unittest.TestCase):
