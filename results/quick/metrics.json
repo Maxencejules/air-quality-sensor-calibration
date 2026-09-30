@@ -1,0 +1,283 @@
+{
+  "dataset": {
+    "file": "AirQualityUCI.csv",
+    "sha256": "13277ae5d8581e80b7be09d47c7d3d06fe9b8e957078f2cf6e859f955e62f996",
+    "target": "CO(GT)",
+    "features": [
+      "PT08.S1(CO)",
+      "PT08.S2(NMHC)",
+      "PT08.S3(NOx)",
+      "PT08.S4(NO2)",
+      "PT08.S5(O3)",
+      "T",
+      "RH",
+      "AH",
+      "hour",
+      "day_of_week"
+    ],
+    "rows_parsed": 9357,
+    "rows_missing_target": 1683,
+    "rows_without_sensor_data": 330,
+    "rows_used": 7344
+  },
+  "periods": {
+    "train": {
+      "rows": 5141,
+      "start": "2004-03-10T18:00:00",
+      "end": "2004-12-19T18:00:00"
+    },
+    "validation": {
+      "rows": 1102,
+      "start": "2004-12-19T19:00:00",
+      "end": "2005-02-16T14:00:00"
+    },
+    "test": {
+      "rows": 1101,
+      "start": "2005-02-16T15:00:00",
+      "end": "2005-04-04T14:00:00"
+    }
+  },
+  "tuning": {
+    "cv": "TimeSeriesSplit(n_splits=3) on the training block",
+    "ridge": {
+      "alpha": 31.622776601683793,
+      "cv_rmse": 0.5185653166790595,
+      "candidates": 13
+    },
+    "hist_gradient_boosting": {
+      "params": {
+        "l2_regularization": 0.09643857615941427,
+        "learning_rate": 0.06689135590392836,
+        "max_iter": 314,
+        "max_leaf_nodes": 18,
+        "min_samples_leaf": 84
+      },
+      "cv_rmse": 0.41865242967954513,
+      "candidates": 2
+    },
+    "stacking": {
+      "base_parameter_policy": "fixed before fitting; independent of standalone tuning",
+      "ridge_alpha": 1.0,
+      "hist_gradient_boosting": {
+        "learning_rate": 0.1,
+        "max_iter": 100,
+        "max_leaf_nodes": 31,
+        "min_samples_leaf": 20,
+        "l2_regularization": 0.0
+      },
+      "meta_model": "LinearRegression(positive=True), intercept enabled",
+      "oof_policy": "expanding-window past-only; initial warmup excluded from meta fit",
+      "validation_fit": {
+        "warmup_rows": 1286,
+        "meta_rows": 3855,
+        "folds": [
+          {
+            "train_rows": 1286,
+            "oof_rows": 1285,
+            "train_start": "2004-03-10T18:00:00",
+            "train_end": "2004-05-17T11:00:00",
+            "oof_start": "2004-05-17T12:00:00",
+            "oof_end": "2004-07-18T09:00:00"
+          },
+          {
+            "train_rows": 2571,
+            "oof_rows": 1285,
+            "train_start": "2004-03-10T18:00:00",
+            "train_end": "2004-07-18T09:00:00",
+            "oof_start": "2004-07-18T10:00:00",
+            "oof_end": "2004-10-21T17:00:00"
+          },
+          {
+            "train_rows": 3856,
+            "oof_rows": 1285,
+            "train_start": "2004-03-10T18:00:00",
+            "train_end": "2004-10-21T17:00:00",
+            "oof_start": "2004-10-21T18:00:00",
+            "oof_end": "2004-12-19T18:00:00"
+          }
+        ]
+      },
+      "test_fit": {
+        "warmup_rows": 1563,
+        "meta_rows": 4680,
+        "folds": [
+          {
+            "train_rows": 1563,
+            "oof_rows": 1560,
+            "train_start": "2004-03-10T18:00:00",
+            "train_end": "2004-06-01T14:00:00",
+            "oof_start": "2004-06-01T15:00:00",
+            "oof_end": "2004-08-26T03:00:00"
+          },
+          {
+            "train_rows": 3123,
+            "oof_rows": 1560,
+            "train_start": "2004-03-10T18:00:00",
+            "train_end": "2004-08-26T03:00:00",
+            "oof_start": "2004-08-26T05:00:00",
+            "oof_end": "2004-11-27T06:00:00"
+          },
+          {
+            "train_rows": 4683,
+            "oof_rows": 1560,
+            "train_start": "2004-03-10T18:00:00",
+            "train_end": "2004-11-27T06:00:00",
+            "oof_start": "2004-11-27T07:00:00",
+            "oof_end": "2005-02-16T14:00:00"
+          }
+        ]
+      }
+    }
+  },
+  "selection_rule": "lowest validation RMSE; test block used only for final scores",
+  "selected_model": "ridge",
+  "scores": {
+    "mean_baseline": {
+      "validation": {
+        "rmse": 1.5103300543908444,
+        "mae": 1.1801651680328,
+        "r2": -0.002797622216825557
+      },
+      "test": {
+        "rmse": 1.3088334645526665,
+        "mae": 1.0512636932656128,
+        "r2": -0.03215438391886227
+      }
+    },
+    "single_sensor_linear": {
+      "validation": {
+        "rmse": 0.851306286133673,
+        "mae": 0.6061908470105247,
+        "r2": 0.6814033192463456
+      },
+      "test": {
+        "rmse": 0.7308011442772584,
+        "mae": 0.564559027801617,
+        "r2": 0.678208685622671
+      }
+    },
+    "ridge": {
+      "validation": {
+        "rmse": 0.6747854346221317,
+        "mae": 0.45046107782036504,
+        "r2": 0.7998290890113099
+      },
+      "test": {
+        "rmse": 0.47094084412326453,
+        "mae": 0.3285622094535607,
+        "r2": 0.8663685760781534
+      }
+    },
+    "random_forest": {
+      "validation": {
+        "rmse": 0.715575343843933,
+        "mae": 0.4686277251601661,
+        "r2": 0.7748975083806083
+      },
+      "test": {
+        "rmse": 0.4824797143395937,
+        "mae": 0.3189843994855348,
+        "r2": 0.8597399475554806
+      }
+    },
+    "hist_gradient_boosting": {
+      "validation": {
+        "rmse": 0.7844120785030417,
+        "mae": 0.5422175084521936,
+        "r2": 0.7295057042245028
+      },
+      "test": {
+        "rmse": 0.478711726096016,
+        "mae": 0.3159056370027586,
+        "r2": 0.8619221513874455
+      }
+    },
+    "stacking": {
+      "validation": {
+        "rmse": 0.7361164774428873,
+        "mae": 0.4842390961830477,
+        "r2": 0.7617885433907029
+      },
+      "test": {
+        "rmse": 0.4831560847774493,
+        "mae": 0.33744137888695236,
+        "r2": 0.8593464211706052
+      }
+    }
+  },
+  "permutation_importance": {
+    "model": "ridge",
+    "block": "test",
+    "measure": "increase in RMSE when the feature is shuffled",
+    "values": [
+      {
+        "feature": "PT08.S2(NMHC)",
+        "rmse_increase_mean": 1.109050236572899,
+        "rmse_increase_std": 0.021887773135666266
+      },
+      {
+        "feature": "PT08.S1(CO)",
+        "rmse_increase_mean": 0.11697341017322378,
+        "rmse_increase_std": 0.002931870518522808
+      },
+      {
+        "feature": "PT08.S3(NOx)",
+        "rmse_increase_mean": 0.06648359553251004,
+        "rmse_increase_std": 0.002132321720774669
+      },
+      {
+        "feature": "T",
+        "rmse_increase_mean": 0.0633748940095642,
+        "rmse_increase_std": 0.0026370055602999275
+      },
+      {
+        "feature": "hour",
+        "rmse_increase_mean": 0.03427314338659818,
+        "rmse_increase_std": 0.003055332870762914
+      },
+      {
+        "feature": "PT08.S4(NO2)",
+        "rmse_increase_mean": 0.01025201047960661,
+        "rmse_increase_std": 0.0001890530591305807
+      },
+      {
+        "feature": "RH",
+        "rmse_increase_mean": 7.933527410697305e-05,
+        "rmse_increase_std": 0.00015644112603259774
+      },
+      {
+        "feature": "AH",
+        "rmse_increase_mean": -0.000171323628792297,
+        "rmse_increase_std": 0.0008868910213729841
+      },
+      {
+        "feature": "day_of_week",
+        "rmse_increase_mean": -0.0007060409804008905,
+        "rmse_increase_std": 0.0009356023481734359
+      },
+      {
+        "feature": "PT08.S5(O3)",
+        "rmse_increase_mean": -0.0010832230398175786,
+        "rmse_increase_std": 0.000293148837335352
+      }
+    ]
+  },
+  "config": {
+    "train_frac": 0.7,
+    "val_frac": 0.15,
+    "cv_splits": 3,
+    "search_iterations": 2,
+    "forest_trees": 30,
+    "importance_repeats": 3,
+    "seed": 42,
+    "n_jobs": 1
+  },
+  "environment": {
+    "python": "3.12.10",
+    "platform": "Windows-11-10.0.26100-SP0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "scikit_learn": "1.5.2",
+    "scipy": "1.16.2"
+  }
+}

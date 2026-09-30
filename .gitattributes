@@ -1,3 +1,4 @@
 # Keep the published dataset byte-for-byte identical (it uses CRLF line endings),
 # so its SHA256 matches the value recorded in data/README.md.
 data/AirQualityUCI.csv -text
+results/** text eol=lf

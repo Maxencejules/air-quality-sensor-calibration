@@ -9,6 +9,8 @@
 | Dataset page | https://archive.ics.uci.edu/dataset/360/air+quality |
 | Downloaded from | https://archive.ics.uci.edu/static/public/360/air+quality.zip |
 | Retrieved | 2026-09-23 |
+| Upstream verification | Official UCI archive re-fetched 2026-09-29; bundled CSV matches its member byte-for-byte |
+| Archive SHA256 | `d4a64013fb385288a8a48d9d193ca7079b2e1bbddf6f8d458feb8c08ab2b8a2a` |
 | License | Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/ |
 | File committed | `AirQualityUCI.csv` from the zip archive, unmodified (the `.xlsx` copy in the same archive is not included) |
 | SHA256 | `13277ae5d8581e80b7be09d47c7d3d06fe9b8e957078f2cf6e859f955e62f996` |

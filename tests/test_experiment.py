@@ -57,6 +57,11 @@ class SelectModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             select_model({})
 
+    def test_nonfinite_validation_rmse_is_rejected(self):
+        for bad in (float("nan"), float("inf"), -float("inf")):
+            with self.assertRaises(ValueError):
+                select_model({"ridge": _entry(bad, 0.0)})
+
 
 class RunExperimentSelectionTests(unittest.TestCase):
     """Patch the scorer so validation and test rankings disagree inside a real run."""
@@ -74,11 +79,19 @@ class RunExperimentSelectionTests(unittest.TestCase):
             split = chronological_split(prepared.X, prepared.y, config.train_frac, config.val_frac)
 
             calls = {"validation": 0, "test": 0}
+            selected_before_test = []
+
+            def choose_without_test(scores):
+                self.assertEqual(calls, {"validation": len(MODEL_ORDER), "test": 0})
+                self.assertTrue(all(set(entry) == {"validation"} for entry in scores.values()))
+                selected_before_test.append(True)
+                return select_model(scores)
 
             def fake_score_all(y_true, y_pred):
                 if y_true.index.equals(split.y_val.index):
                     stage, best = "validation", self.VALIDATION_BEST
                 elif y_true.index.equals(split.y_test.index):
+                    self.assertEqual(selected_before_test, [True])
                     stage, best = "test", self.TEST_BEST
                 else:
                     raise AssertionError("scored rows are neither the validation nor the test block")
@@ -87,7 +100,8 @@ class RunExperimentSelectionTests(unittest.TestCase):
                 rmse = 0.1 if name == best else 1.0 + MODEL_ORDER.index(name)
                 return {"rmse": rmse, "mae": rmse, "r2": 0.0}
 
-            with mock.patch.object(experiment, "score_all", side_effect=fake_score_all):
+            with mock.patch.object(experiment, "score_all", side_effect=fake_score_all), \
+                    mock.patch.object(experiment, "select_model", side_effect=choose_without_test):
                 result = run_experiment(path, config)
 
         self.assertEqual(calls, {"validation": len(MODEL_ORDER), "test": len(MODEL_ORDER)})

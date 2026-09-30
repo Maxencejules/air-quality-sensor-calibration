@@ -51,6 +51,15 @@ class HandComputedMetricTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             mae([], [])
 
+    def test_nonfinite_targets_and_predictions_are_rejected(self):
+        for bad in (float("nan"), float("inf"), -float("inf")):
+            for metric in (rmse, mae, r_squared):
+                with self.subTest(metric=metric.__name__, value=bad):
+                    with self.assertRaises(ValueError):
+                        metric([1.0, bad], [1.0, 2.0])
+                    with self.assertRaises(ValueError):
+                        metric([1.0, 2.0], [1.0, bad])
+
 
 if __name__ == "__main__":
     unittest.main()

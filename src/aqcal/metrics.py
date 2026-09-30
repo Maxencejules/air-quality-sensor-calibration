@@ -14,6 +14,8 @@ def _as_pair(y_true, y_pred) -> tuple[np.ndarray, np.ndarray]:
         raise ValueError(f"length mismatch: {a.shape[0]} targets vs {b.shape[0]} predictions")
     if a.size == 0:
         raise ValueError("cannot score an empty set")
+    if not np.isfinite(a).all() or not np.isfinite(b).all():
+        raise ValueError("targets and predictions must be finite")
     return a, b
 
 

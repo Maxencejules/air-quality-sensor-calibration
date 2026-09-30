@@ -43,6 +43,7 @@ def to_json_dict(result: ExperimentResult) -> dict:
                 "values": result.importance.to_dict(orient="records"),
             },
             "config": result.config,
+            "environment": result.environment,
         }
     )
 
@@ -52,11 +53,11 @@ def write_outputs(result: ExperimentResult, out_dir: str) -> list[str]:
     os.makedirs(out_dir, exist_ok=True)
     paths = [os.path.join(out_dir, name) for name in (METRICS_JSON, METRICS_CSV, IMPORTANCE_CSV)]
 
-    with open(paths[0], "w", encoding="utf-8") as handle:
+    with open(paths[0], "w", encoding="utf-8", newline="\n") as handle:
         json.dump(to_json_dict(result), handle, indent=2, allow_nan=False)
         handle.write("\n")
-    result.scores_table().to_csv(paths[1], index=False, float_format="%.6f")
-    result.importance.to_csv(paths[2], index=False, float_format="%.6f")
+    result.scores_table().to_csv(paths[1], index=False, float_format="%.6f", lineterminator="\n")
+    result.importance.to_csv(paths[2], index=False, float_format="%.6f", lineterminator="\n")
     return paths
 
 

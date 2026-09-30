@@ -17,10 +17,14 @@ from __future__ import annotations
 
 import hashlib
 import os
+import platform
 from dataclasses import asdict, dataclass, field
 from typing import Callable
 
 import pandas as pd
+import numpy as np
+import scipy
+import sklearn
 from sklearn.base import BaseEstimator
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import TimeSeriesSplit
@@ -62,6 +66,7 @@ class ExperimentResult:
     selected_model: str
     importance: pd.DataFrame
     config: dict = field(default_factory=dict)
+    environment: dict = field(default_factory=dict)
 
     def scores_table(self) -> pd.DataFrame:
         rows = []
@@ -94,6 +99,8 @@ def select_model(scores: dict[str, dict], order: tuple[str, ...] = MODEL_ORDER) 
     candidates = [name for name in order if name in scores]
     if not candidates:
         raise ValueError("no scored models to choose from")
+    if any(not np.isfinite(scores[name]["validation"]["rmse"]) for name in candidates):
+        raise ValueError("validation RMSE must be finite for every candidate")
     return min(candidates, key=lambda name: scores[name]["validation"]["rmse"])
 
 
@@ -107,7 +114,7 @@ def build_factories(config: RunConfig, ridge_alpha: float, hgb_params: dict) -> 
         "random_forest": lambda: models.random_forest(trees, seed, jobs),
         "hist_gradient_boosting": lambda: models.hist_gradient_boosting(seed, **hgb_params),
         "stacking": lambda: models.stacking(
-            ridge_alpha, hgb_params, trees, seed, jobs, folds=config.cv_splits
+            trees, seed, jobs, folds=config.cv_splits
         ),
     }
 
@@ -134,19 +141,39 @@ def run_experiment(data_path: str, config: RunConfig | None = None) -> Experimen
     X_fit_final, y_fit_final = split.X_train_val, split.y_train_val
 
     scores: dict[str, dict] = {}
-    final_models: dict[str, BaseEstimator] = {}
+    stacking_protocol = {
+        "base_parameter_policy": "fixed before fitting; independent of standalone tuning",
+        "ridge_alpha": models.STACK_RIDGE_ALPHA,
+        "hist_gradient_boosting": dict(models.STACK_HGB_PARAMS),
+        "meta_model": "LinearRegression(positive=True), intercept enabled",
+        "oof_policy": "expanding-window past-only; initial warmup excluded from meta fit",
+    }
     for name in MODEL_ORDER:
         make = factories[name]
         on_train = make().fit(split.X_train, split.y_train)
         validation = score_all(split.y_val, on_train.predict(split.X_val))
 
-        final = make().fit(X_fit_final, y_fit_final)
-        test = score_all(split.y_test, final.predict(split.X_test))
-
-        scores[name] = {"validation": validation, "test": test}
-        final_models[name] = final
-
+        scores[name] = {"validation": validation}
+        if name == "stacking":
+            stacking_protocol["validation_fit"] = {
+                "warmup_rows": on_train.warmup_rows_,
+                "meta_rows": len(on_train.oof_predictions_),
+                "folds": on_train.fold_records_,
+            }
+    # Select before any model is refitted or any held-out target is scored.
     selected = select_model(scores)
+
+    final_models: dict[str, BaseEstimator] = {}
+    for name in MODEL_ORDER:
+        final = factories[name]().fit(X_fit_final, y_fit_final)
+        scores[name]["test"] = score_all(split.y_test, final.predict(split.X_test))
+        final_models[name] = final
+        if name == "stacking":
+            stacking_protocol["test_fit"] = {
+                "warmup_rows": final.warmup_rows_,
+                "meta_rows": len(final.oof_predictions_),
+                "folds": final.fold_records_,
+            }
 
     perm = permutation_importance(
         final_models[selected],
@@ -182,6 +209,7 @@ def run_experiment(data_path: str, config: RunConfig | None = None) -> Experimen
         "cv": f"TimeSeriesSplit(n_splits={config.cv_splits}) on the training block",
         "ridge": ridge_search,
         "hist_gradient_boosting": hgb_search,
+        "stacking": stacking_protocol,
     }
     return ExperimentResult(
         dataset=dataset,
@@ -191,4 +219,9 @@ def run_experiment(data_path: str, config: RunConfig | None = None) -> Experimen
         selected_model=selected,
         importance=importance,
         config=asdict(config),
+        environment={
+            "python": platform.python_version(), "platform": platform.platform(),
+            "numpy": np.__version__, "pandas": pd.__version__,
+            "scikit_learn": sklearn.__version__, "scipy": scipy.__version__,
+        },
     )
